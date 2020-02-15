@@ -104,23 +104,27 @@ void Blink(void){
 
 //funkcja realizuje procedure jednego okresu plynnego migania dioda LED
 void BlinkSmoothly(void) {
+  int brightnessDown = 0;
 
-  //struktura "for" - zainicjuj zmienna brightness wartością zerą i inkrementuj ją o wartość 10 tak długo jak długo jej wartość nie przekracza 100
-  for (int brightness = 0; brightness <= 100; brightness = brightness+1) {
-    //kod w tym nawiasie klamrowym bedze sie tak dlugo wykonywac jak dlugo spelniony bedzie warunek (brightness <= 100)
+  //struktura "for" - zainicjuj zmienna brightnessUp wartością zerą i inkrementuj ją o wartość 1 tak długo jak długo jej wartość nie przekracza 100
+  for (int brightnessUp = 0; brightnessUp <= 100; brightnessUp = brightnessUp+1) {
+    //kod w tym nawiasie klamrowym bedze sie tak dlugo wykonywac jak dlugo spelniony bedzie warunek (brightnessUp <= 100)
 
     //ustaw PWM na wartosc odpowiadajacej wartosci brightness i odczekaj 10 milisekund
-    analogWrite(LED, brightness);
+    analogWrite(LED, brightnessUp);
     delay(10);
   }
   
-  //struktura "for" - zainicjuj zmienna brightness wartością 100 i dekrementuj ją o wartość 10 tak długo jak długo jej wartość jest dodatnia lub rowna zero
-  for (int brightness = 100; brightness >= 0; brightness = brightness-1) {
-    //kod w tym nawiasie klamrowym bedze sie tak dlugo wykonywac jak dlugo spelniony bedzie warunek (brightness >= 0)
+  brightnessDown = 100;
+  //struktura "while" - powtarzaj kod tak długo jak długo wartosc zmiennej brightnessDown jest dodatnia lub rowna zero
+  while(brightnessDown >= 0){
+    //kod w tym nawiasie klamrowym bedze sie tak dlugo wykonywac jak dlugo spelniony bedzie warunek (brightnessDown >= 0)
 
     //ustaw PWM na wartosc odpowiadajacej wartosci brightness i odczekaj 10 milisekund
-    analogWrite(LED, brightness);
+    analogWrite(LED, brightnessDown);
     delay(10);
+
+    //dekrementuj zmienna brightnessDown
+    brightnessDown=brightnessDown-1;
   }
-  
 }
