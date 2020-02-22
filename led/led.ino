@@ -15,19 +15,6 @@ https://www.arduino.cc/reference/en/language/structure/sketch/loop/
 wszystkie natywne funkcje wbudowane w Arduino
 https://www.arduino.cc/reference/en/#functions
 
-funkcja Arduino pinMode(pin, mode)
-https://www.arduino.cc/reference/en/language/functions/digital-io/pinmode/
-https://www.arduino.cc/en/Tutorial/DigitalPins
-
-funkcja Arduino digitalRead(pin)
-https://www.arduino.cc/reference/en/language/functions/digital-io/digitalread/
-
-funkcja Arduino digitalWrite(pin, value)
-https://www.arduino.cc/reference/en/language/functions/digital-io/digitalwrite/
-
-funkcja Arduino analogWrite(pin, value)
-https://www.arduino.cc/reference/en/language/functions/analog-io/analogwrite/
-
 funkcja Arduino milis();
 https://www.arduino.cc/reference/en/language/functions/time/millis/
 
@@ -36,48 +23,50 @@ https://www.arduino.cc/reference/en/language/functions/communication/serial/begi
 https://www.arduino.cc/reference/en/language/functions/communication/serial/print/
 https://www.arduino.cc/reference/en/language/functions/communication/serial/println/
 
-tryby pracy PWM - teoria
-https://www.arduino.cc/en/Tutorial/PWM
-
 --------------------------------------------------------
 
 wszystkie typy zmiennych uzywanych w Arduino
 https://www.arduino.cc/reference/en/#variables
 
-slowo kluczowe static jezyka c++
-https://www.arduino.cc/reference/en/language/variables/variable-scope--qualifiers/static/
 
 struktura if else jezyka c++
 https://www.arduino.cc/reference/en/language/structure/control-structure/if/
 https://www.arduino.cc/reference/en/language/structure/control-structure/else/
 
+
+---------------------------------------------------------
+
+wyświetlacz tekstowy LCD z konwerterem I2C
+http://www.arduino.idsl.pl/index.php/biblioteki-arduino-ide/13-liquidcrystal-i2c-h
+
 */
 
-#define LED  3 //przypisz do slowa LED liczbe 3
-#define BUTTON 4 //przypisz do slowa BUTTON liczbe 4
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
 
-void Blink(void);
-void BlinkSmoothly(void);
+unsigned long aktualnyCzas500 = 0;
+unsigned long zapamietanyCzas500 = 0;
+unsigned long roznicaCzasu500 = 0;
 
+unsigned int kierunek = 0;
+unsigned int krok = 0;
 
-int przycisk = 0;
+String wiadomosc = "Arduino :)";
 
-unsigned long aktualnyCzas10 = 0;
-unsigned long zapamietanyCzas10 = 0;
-unsigned long roznicaCzasu10 = 0;
-
-unsigned long aktualnyCzas100 = 0;
-unsigned long zapamietanyCzas100 = 0;
-unsigned long roznicaCzasu100 = 0;
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 //funkcja arduino setup() - wywolywana tylko jeden raz na poczatku programu
 void setup() {
 
   Serial.begin(115200); //zainicjuj UART do debugoania kodu
   
-  pinMode(LED, OUTPUT); //zainicuj pin portu o numerze LED jak wyjście
-  
-  pinMode(BUTTON, INPUT_PULLUP); //zainicuj pin portu o numerze BUTTON jako wejście z "podciąganiem"
+  //inicjalizacja wysweitlacza
+  lcd.init();
+  lcd.backlight();
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(wiadomosc);
 
   Serial.println("Start programu!"); //wyslij wiadomosc przez UART - port do debugowania kodu
 }
@@ -86,102 +75,43 @@ void setup() {
 //funkcja arduino loop() - wywolywana cyklicznie
 void loop() {
 
-  przycisk = digitalRead(BUTTON); //odczytaj stan przycisku i zapisz do zmiennej button
-
   //oblicz roznice czasu, odmierzenie 10ms 
-  aktualnyCzas10 = millis(); //Pobierz liczbe milisekund od startu programu
-  roznicaCzasu10 = aktualnyCzas10 - zapamietanyCzas10;
+  aktualnyCzas500 = millis(); //Pobierz liczbe milisekund od startu programu
+  roznicaCzasu500 = aktualnyCzas500 - zapamietanyCzas500;
 
-  //oblicz roznice czasu, odmierzenie 10ms 
-  aktualnyCzas100 = millis(); //Pobierz liczbe milisekund od startu programu
-  roznicaCzasu100 = aktualnyCzas100 - zapamietanyCzas100;
-
-
-  if (roznicaCzasu10 >= 10) {
-    zapamietanyCzas10 = aktualnyCzas10; //Zapamietaj aktualny czas
-
-    //kod tutaj bedzie sie wykonywac co 10ms
-
-    //migiaj dioda plynnie lub nie, w zaleznosci od stanu przycisku
-    if (przycisk == HIGH) {
-      Blink();
-    } else {
-      BlinkSmoothly();
-    }
-
-  }
-
-  if (roznicaCzasu100 >= 100) {
+  if (roznicaCzasu500 >= 500) {
     //Zapamietaj aktualny czas
-    zapamietanyCzas100 = aktualnyCzas100;
+    zapamietanyCzas500 = aktualnyCzas500;
     
-    //kod tutaj bedzie sie wykonywac co 100ms
+    //kod tutaj bedzie sie wykonywac co 500ms
+    
+    if (krok >= (16 - wiadomosc.length()) ) {
+      krok = 0; //zeruj liczbe krokow
+      kierunek++; //zmien kierunek przesuwania tekstu
 
-    //wyslij na UART dane debugowe
-    Serial.print("zmienna przycisk ma wartosc: ");
-    Serial.println(przycisk);
-  }
-}
-
-
-void Blink(void){
-    //zainicjuj zmienne statyczne
-    static int blinkCnt = 0;
-    static int blinkDir = 0;
-
-    //odmierzaj liczba powtorzen i kiedy wiecej lub rowne 100 to inkeremntuj zmienna blinkDir
-    blinkCnt++;
-    if (blinkCnt>=100) {
-      blinkCnt=0;
-      blinkDir++;
+      //debug
+      Serial.println("zmieniono kierunek przesuwania tekstu");
     }
-    
-    if (blinkDir%2) {
-      //kod tutaj wykona sie za kazdym razem kiedy operacja blinkDir%2 da reszte rozna od 0
 
-      //ustaw pin LED na wartość HIGH i odczekaj 1000ms
-      digitalWrite(LED, HIGH);
-
+    if ( kierunek % 2 == 0) {
+      //przesuwaj wiadomosc na wyswietlaczu w prawo
+      
+      lcd.scrollDisplayRight(); //komenda do wyswietlacza - przesun wiadomosc w prawo
+      krok++; //inkrementuj licznik krokow
+      
+      //debug
+      Serial.println("przesunieto wiadomosc w prawo");
+      
     } else {
-      //kod tutaj wykona sie za kazdym razem kiedy operacja blinkDir%2 da rowna 0
+      //przesuwaj wiadomosc na wyswietlaczu w lewo
+      
+      lcd.scrollDisplayLeft(); //komenda do wyswietlacza - przesun wiadomosc w lewo
+      krok++; //inkrementuj licznik krokow
 
-      //ustaw pin LED na wartość LOW i odczekaj 1000ms
-      digitalWrite(LED, LOW);
+      //debug
+      Serial.println("przesunieto wiadomosc w lewo");
       
     }
-}
 
-
-//funkcja realizuje procedure jednego okresu plynnego migania dioda LED
-void BlinkSmoothly(void) {
-
-  //zainicjuj zmienne statyczne
-  static int blinkCnt = 0;
-  static int blinkDir = 1;
-  static int brightnrss = 0;
-  
-  if (blinkDir%2) {
-    //kod tutaj wykona sie za kazdym razem kiedy operacja blinkDir%2 da reszte rozna od 0
-    
-    //ustaw PWM na wartosc odpowiadajacej wartosci blinkCnt
-    analogWrite(LED, blinkCnt);
-
-    //odmierzaj liczba powtorzen i kiedy wiecej lub rowne 100 to inkeremntuj zmienna blinkDir
-    blinkCnt++;
-    if ( blinkCnt >= 100 ) {
-      blinkDir++;
-    }
-
-  } else {
-    //kod tutaj wykona sie za kazdym razem kiedy operacja blinkDir%2 da rowna 0
-    
-    //ustaw PWM na wartosc odpowiadajacej wartosci blinkCnt
-    analogWrite(LED, blinkCnt);
-
-    //odmierzaj liczba powtorzen i kiedy wiecej lub rowne 100 to inkeremntuj zmienna blinkDir
-    blinkCnt--;
-    if ( blinkCnt <= 0 ) {
-      blinkDir++;
-    }
   }
 }
